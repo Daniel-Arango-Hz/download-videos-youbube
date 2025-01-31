@@ -89,11 +89,5 @@ yt-downloader-pro/
 
 Nota: Este proyecto es solo para fines educativos. Asegúrate de cumplir con los términos de servicio de YouTube al utilizarlo.
 
-Copy
 
-### Características del README:
-1. **Encabezado visual**: Con badges dinámicos para versiones y licencia.
-2. **Instrucciones claras**: Pasos detallados para instalar y ejecutar.
-3. **Estructura organizada**: Secciones bien definidas.
-4. **Información técnica**: Tecnologías usadas y estructura del proyecto.
-5. **Contribución y licencia**: Instrucciones para colaborar y detalles legales.
+
