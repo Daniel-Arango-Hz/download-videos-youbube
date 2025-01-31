@@ -1,95 +1,99 @@
-# Descargador de Videos y Audios 📹🎵
+# 🚀 YT Downloader Pro
 
-Esta es una aplicación basada en **Streamlit** que permite descargar videos o audios desde URLs compatibles (como YouTube) utilizando la biblioteca **yt-dlp**.
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.22.0-FF4B4B)
+![yt-dlp](https://img.shields.io/badge/yt--dlp-2023.7.6-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## Características
+**YT Downloader Pro** es una aplicación web moderna y fácil de usar para descargar videos y audio de YouTube en formatos MP4 y MP3. Desarrollada con Python y Streamlit, ofrece una interfaz intuitiva y un flujo de trabajo optimizado.
 
-- Descarga de videos en formato MP4.
-- Descarga de audios en formato MP3.
-- Interfaz de usuario simple y amigable.
-- Progreso de descarga en tiempo real.
-- Eliminación automática de archivos temporales después de la descarga.
-- Función de reinicio para limpiar el estado de la aplicación.
+## ✨ Características principales
 
-## Requisitos
+- **Previsualización de videos**: Muestra miniaturas, título, duración y estadísticas del video.
+- **Descargas rápidas**: Soporte para MP4 (hasta 720p) y MP3 (calidad de 192kbps).
+- **Interfaz moderna**: Diseño limpio y responsive.
+- **Proceso en dos pasos**: Carga el video primero, luego descárgalo.
+- **Manejo de errores**: Notificaciones claras para problemas comunes.
+- **Descarga automática**: Los archivos se descargan directamente en tu dispositivo.
 
-Antes de ejecutar la aplicación, asegúrate de tener instalado lo siguiente:
+## 🛠️ Requisitos del sistema
 
 - Python 3.8 o superior
-- Las bibliotecas necesarias indicadas en el archivo `requirements.txt`
+- pip (gestor de paquetes de Python)
+- FFmpeg (para conversión de formatos)
 
-## Instalación
+## 🚀 Instalación
 
-1. Clona este repositorio o descarga los archivos directamente.
+1. Clona el repositorio:
    ```bash
-   git clone <URL_DEL_REPOSITORIO>
-   cd <NOMBRE_DEL_PROYECTO>
-   ```
+   git clone https://github.com/tuusuario/yt-downloader-pro.git
+   cd yt-downloader-pro
 
-2. Crea un entorno virtual (opcional, pero recomendado):
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # En Windows: venv\Scripts\activate
-   ```
+2. Instala las dependencias:
+pip install -r requirements.txt
 
-3. Instala las dependencias:
-   ```bash
-   pip install -r requirements.txt
-   ```
+3. Asegúrate de tener FFmpeg instalado:
 
-4. Asegúrate de que FFmpeg esté instalado en tu sistema (necesario para la conversión a MP3). Puedes instalarlo desde:
-   - [Sitio oficial de FFmpeg](https://ffmpeg.org/)
+Windows: Descarga desde ffmpeg.org y añádelo al PATH.
 
-## Ejecución
+Linux: sudo apt install ffmpeg
 
-Para iniciar la aplicación, ejecuta el siguiente comando:
+macOS: brew install ffmpeg
 
-```bash
+4. Ejecuta la aplicación:
 streamlit run app.py
-```
+Abre tu navegador en http://localhost:8501.
 
-Esto abrirá la aplicación en tu navegador predeterminado en la URL: `http://localhost:8501`
+🖥️ Uso
+1. Ingresa la URL del video de YouTube.
 
-## Uso
+2. Haz clic en Cargar Video para previsualizar.
 
-1. Ingresa la URL del video que deseas descargar.
-2. Selecciona el formato de descarga: `MP4 (video)` o `MP3 (audio)`.
-3. Haz clic en el botón **Obtener** para iniciar la descarga.
-4. Una vez descargado, podrás descargar el archivo a tu dispositivo.
-5. Usa el botón **Reiniciar** para limpiar el estado de la aplicación y realizar otra descarga.
+3. Selecciona el formato deseado (MP4 o MP3).
 
-## Estructura del Proyecto
+4. Haz clic en Descargar Ahora.
 
-```
-.
+* ¡Listo! El archivo se descargará automáticamente.
+
+🛠️ Tecnologías utilizadas
+Python: Lenguaje principal del proyecto.
+
+* Streamlit: Framework para la interfaz web.
+
+* yt-dlp: Biblioteca para descargar contenido de YouTube.
+
+* FFmpeg: Conversión y procesamiento de medios.
+
+* Base64: Codificación de archivos para descarga.
+
+📂 Estructura del proyecto
+yt-downloader-pro/
 ├── app.py                # Código principal de la aplicación
 ├── requirements.txt      # Dependencias del proyecto
-├── downloads/            # Carpeta donde se guardan los archivos descargados
-└── README.md             # Este archivo
-```
+├── README.md             # Este archivo
+└── downloads/            # Carpeta temporal para archivos descargados
 
-## Dependencias
+🤝 Contribución
+¡Las contribuciones son bienvenidas! Sigue estos pasos:
 
-El archivo `requirements.txt` incluye las siguientes bibliotecas:
+1. Haz un fork del proyecto.
 
-- `yt-dlp`: Manejo de descargas desde múltiples plataformas.
-- `streamlit`: Creación de la interfaz de usuario.
+2. Crea una rama (git checkout -b feature/nueva-funcionalidad).
 
-Instala las dependencias usando:
-```bash
-pip install -r requirements.txt
-```
+3. Haz commit de tus cambios (git commit -m 'Añade nueva funcionalidad').
 
-## Notas
+4. Haz push a la rama (git push origin feature/nueva-funcionalidad).
 
-- La aplicación utiliza **yt-dlp**, que es una bifurcación de youtube-dl, para realizar las descargas. Esto asegura compatibilidad con múltiples plataformas de video.
-- FFmpeg es necesario para convertir archivos de audio a MP3.
+5. Abre un Pull Request.
 
-## Licencia
 
-Este proyecto está bajo la licencia MIT. Siéntete libre de usarlo, modificarlo y distribuirlo.
+Nota: Este proyecto es solo para fines educativos. Asegúrate de cumplir con los términos de servicio de YouTube al utilizarlo.
 
----
+Copy
 
-¡Disfruta descargando videos y audios con facilidad! 😊
-
+### Características del README:
+1. **Encabezado visual**: Con badges dinámicos para versiones y licencia.
+2. **Instrucciones claras**: Pasos detallados para instalar y ejecutar.
+3. **Estructura organizada**: Secciones bien definidas.
+4. **Información técnica**: Tecnologías usadas y estructura del proyecto.
+5. **Contribución y licencia**: Instrucciones para colaborar y detalles legales.
