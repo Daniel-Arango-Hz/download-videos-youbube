@@ -1,170 +1,157 @@
 import yt_dlp
 import streamlit as st
 import os
+import base64
+import time
+from datetime import datetime
 
-# Estilos personalizados para centrar el contenido
-st.markdown(
-    """
-    <style>
-        div[data-testid="stModal"] {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .block-container {
-            max-width: 600px;
-            margin: auto;
-            text-align: center;
-        }
-        .stButton > button {
-            width: 100%;
-        }
-        .stDownloadButton > button {
-            width: 100%;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+def get_video_info(url):
+    ydl_opts = {
+        'quiet': True,
+        'noplaylist': True,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        return ydl.extract_info(url, download=False)
 
-class VideoDownloader:
-    def __init__(self, url, format_option, output_path):
-        self.url = url
-        self.format_option = format_option
-        self.output_path = output_path
+def download_media(url, format_type):
+    ydl_opts = {
+        'outtmpl': os.path.join('downloads', '%(title)s.%(ext)s'),
+        'quiet': True,
+        'noplaylist': True,
+        'format': 'bestaudio/best' if format_type == "MP3" else 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192'
+        }] if format_type == "MP3" else [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4'
+        }]
+    }
 
-    def download(self, progress_callback):
-        """Método para descargar el video/audio en el formato seleccionado."""
-        ydl_opts = {
-            "noplaylist": True,
-            "progress_hooks": [progress_callback],
-            "quiet": True,
-            "outtmpl": os.path.join(self.output_path, "%(title)s.%(ext)s"),
-            "nocheckcertificate": True,
-            "geo_bypass": True,
-            "geo_bypass_country": "US",
-            "cookies_from_browser": ("chrome",),  # Usa cookies de Chrome automáticamente
-            "http_headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                "Referer": "https://www.youtube.com/"
-            }
-        }
-
-        if self.format_option == "MP4 (video)":
-            ydl_opts["format"] = "bestvideo+bestaudio/best"
-            ydl_opts["merge_output_format"] = "mp4"
-        elif self.format_option == "MP3 (audio)":
-            ydl_opts["format"] = "bestaudio/best"
-            ydl_opts["postprocessors"] = [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }]
-            ydl_opts["ext"] = "mp3"
-
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                st.toast(f"Descargando desde: {self.url} en formato: {self.format_option}")
-                info = ydl.extract_info(self.url, download=True)
-
-                file_extension = "mp3" if self.format_option == "MP3 (audio)" else info.get("ext", "mp4")
-                file_path = os.path.join(self.output_path, f"{info['title']}.{file_extension}")
-
-                return file_path if os.path.exists(file_path) else None
-        except Exception as e:
-            st.toast(f"Error al descargar: {str(e)}", icon="❌")
-            st.error(f"Error al descargar: {str(e)}")
-            return None
-
-def on_progress(d):
-    """Función para mostrar el progreso de descarga."""
-    if d.get("status") == "downloading":
-        total_bytes = d.get("total_bytes", 0)
-        downloaded_bytes = d.get("downloaded_bytes", 0)
-        if total_bytes > 0:
-            st.session_state.progress = downloaded_bytes / total_bytes
-
-def reset_states():
-    """Reinicia los estados de la aplicación."""
-    for key in ["should_clear_url", "file_path", "file_name", "progress", "is_downloading", "show_success"]:
-        st.session_state[key] = None
-    st.rerun()
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        ext = 'mp3' if format_type == "MP3" else 'mp4'
+        return os.path.join('downloads', f"{info['title']}.{ext}")
 
 def main():
-    st.title("📥 Descargador de Videos y Audios")
+    st.set_page_config(page_title="YT Downloader", page_icon="🎬", layout="centered")
+    
+    st.markdown("""
+    <style>
+        .preview-card {
+            border: 1px solid #FF4B4B;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .preview-thumbnail {
+            border-radius: 8px;
+        }
+        .info-text {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .stButton>button {
+            transition: all 0.3s ease;
+        }
+        .stButton>button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 YT Downloader Pro</h1>", unsafe_allow_html=True)
 
-    # Inicializar estados en Streamlit si no existen
-    for key in ["should_clear_url", "progress", "is_downloading", "file_path", "file_name", "show_success", "last_url"]:
-        if key not in st.session_state:
-            st.session_state[key] = None
-
-    url = st.text_input("🔗 Ingrese la URL del video:", value=st.session_state.get("last_url", ""))
-    if url:
-        st.session_state.last_url = url
-
-    format_options = ["MP4 (video)", "MP3 (audio)"]
-    selected_format = st.selectbox("🎞️ Seleccione el formato de descarga:", format_options)
-
-    output_path = "./downloads"
-    os.makedirs(output_path, exist_ok=True)
-
-    # Deshabilitar botón si no hay URL o si ya se está descargando un archivo
-    is_button_disabled = not bool(url) or bool(st.session_state.is_downloading) or bool(st.session_state.file_path)
-
-    st.divider()
-
-    # Botón de descarga centrado
-    if st.button("🚀 Obtener", disabled=is_button_disabled):
-        if url:
-            st.session_state.is_downloading = True
-            st.session_state.progress = 0.0
-
-            with st.spinner("⏳ Descargando archivo... Por favor, espera."):
-                downloader = VideoDownloader(url, selected_format, output_path)
-                file_path = downloader.download(on_progress)
-
-                if file_path:
-                    st.session_state.file_path = file_path
-                    st.session_state.file_name = os.path.basename(file_path)
-                    st.success("✅ ¡Tu archivo se ha descargado exitosamente!")
-                    st.toast("¡Descarga completada con éxito!", icon="✅")
-                    st.session_state.show_success = True
-                else:
-                    st.error("❌ Error: No se pudo completar la descarga")
-
-            st.session_state.is_downloading = False
-            st.rerun()
-
-    if st.session_state.is_downloading:
-        st.progress(st.session_state.progress)
-
-    if st.session_state.show_success:
-        st.success("✅ ¡Descarga completada!")
-
-    # Mostrar botón de descarga si el archivo existe
-    if st.session_state.file_path and os.path.exists(st.session_state.file_path):
-        with open(st.session_state.file_path, "rb") as f:
-            if st.download_button(
-                label="📥 Descargar el archivo",
-                data=f,
-                file_name=st.session_state.file_name,
-                mime="application/octet-stream"
-            ):
+    # Primer paso: Cargar video
+    with st.form(key='cargar_form'):
+        url = st.text_input("**URL de YouTube**", placeholder="Pega el enlace aquí...")
+        if st.form_submit_button("🎥 Cargar Video"):
+            if not url:
+                st.warning("⚠️ Por favor ingresa una URL válida de YouTube")
+            else:
                 try:
-                    f.close()
-                    os.remove(st.session_state.file_path)
-                    st.toast("🗑️ Archivo temporal eliminado exitosamente.")
+                    with st.spinner('Buscando video...'):
+                        st.session_state.video_info = get_video_info(url)
+                    st.success("¡Video cargado correctamente!")
                 except Exception as e:
-                    st.error(f"❌ No se pudo eliminar el archivo temporal: {e}")
-                finally:
-                    st.success("🎉 ¡Descarga completada! La página se recargará en unos segundos...")
-                    st.balloons()
-                    reset_states()
+                    st.error(f"❌ Error al encontrar el video: {str(e)}")
+                    if 'video_info' in st.session_state:
+                        del st.session_state.video_info
 
-    # Botón de reinicio
-    if st.session_state.file_path or st.session_state.is_downloading:
-        if st.button("🔄 Reiniciar"):
-            reset_states()
+    # Segundo paso: Mostrar previsualización y descarga
+    if 'video_info' in st.session_state:
+        info = st.session_state.video_info
+        with st.container():
+            st.markdown("<div class='preview-card'>", unsafe_allow_html=True)
+            
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.image(info.get('thumbnail', ''),
+                       use_container_width=True,
+                       caption="Vista previa")
+            
+            with col2:
+                st.subheader(info.get('title', 'Sin título'))
+                
+                duration = info.get('duration', 0)
+                minutes, seconds = divmod(duration, 60)
+                hours, minutes = divmod(minutes, 60)
+                duration_str = f"{hours:02}:{minutes:02}:{seconds:02}" if hours else f"{minutes:02}:{seconds:02}"
+                
+                st.markdown(f"""
+                <div class="info-text">
+                📺 Canal: **{info.get('uploader', 'Desconocido')}**  
+                🕒 Duración: **{duration_str}**  
+                📅 Fecha de subida: **{datetime.strptime(info['upload_date'], '%Y%m%d').strftime('%d/%m/%Y')}**  
+                👁️ Vistas: **{info.get('view_count', 'N/A'):,}**  
+                👍 Likes: **{info.get('like_count', 'N/A'):,}**
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # Tercer paso: Selección de formato y descarga
+        format_type = st.selectbox("**Seleccionar Formato**", ["MP4", "MP3"], key='format_select')
+        if st.button("⬇️ Descargar Ahora", type="primary", key='descargar_boton'):
+            try:
+                os.makedirs("downloads", exist_ok=True)
+                with st.spinner('Procesando descarga...'):
+                    file_path = download_media(url, format_type)
+                    
+                    with open(file_path, "rb") as f:
+                        file_bytes = f.read()
+                    
+                    b64 = base64.b64encode(file_bytes).decode()
+                    mime_type = "audio/mp3" if format_type == "MP3" else "video/mp4"
+                    file_name = os.path.basename(file_path)
+                    
+                    js = f"""
+                    <script>
+                        function downloadFile() {{
+                            var link = document.createElement('a');
+                            link.href = 'data:{mime_type};base64,{b64}';
+                            link.download = '{file_name}';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }}
+                        window.onload = downloadFile;
+                    </script>
+                    """
+                    st.components.v1.html(js, height=0)
+                    os.remove(file_path)
+                    del st.session_state.video_info
+                    st.success("✅ Descarga completada con éxito!")
+                    time.sleep(1)
+                    st.rerun()
+            
+            except Exception as e:
+                st.error(f"❌ Error en la descarga: {str(e)}")
+                if 'file_path' in locals() and os.path.exists(file_path):
+                    os.remove(file_path)
 
 if __name__ == "__main__":
     main()

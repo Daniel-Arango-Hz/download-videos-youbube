@@ -2,3 +2,5 @@ streamlit
 pytube
 yt_dlp
 browser-cookie3
+requests
+cryptography
