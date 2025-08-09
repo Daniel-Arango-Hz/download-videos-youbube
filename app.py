@@ -28,13 +28,21 @@ def get_video_info(url):
         return ydl.extract_info(url, download=False)
 
 def get_ffmpeg_location():
-    # Busca ffmpeg en el PATH o usa una variable de entorno
+    # Busca ffmpeg en variable de entorno, en el PATH, o en la carpeta local del proyecto
     ffmpeg_path = os.environ.get("FFMPEG_PATH")
     if ffmpeg_path and os.path.isfile(ffmpeg_path):
         return ffmpeg_path
     ffmpeg_in_path = shutil.which("ffmpeg")
     if ffmpeg_in_path:
         return ffmpeg_in_path
+    # Busca en la carpeta local del proyecto
+    local_ffmpeg = os.path.join(os.path.dirname(__file__), "ffmpeg", "ffmpeg")
+    if os.path.isfile(local_ffmpeg):
+        return local_ffmpeg
+    # Para Windows
+    local_ffmpeg_win = os.path.join(os.path.dirname(__file__), "ffmpeg", "ffmpeg.exe")
+    if os.path.isfile(local_ffmpeg_win):
+        return local_ffmpeg_win
     return None
 
 def download_media(url, format_type, cookies_path=None):
@@ -177,7 +185,14 @@ def main():
                 os.remove(cookies_path)
 
     if not get_ffmpeg_location():
-        st.warning("⚠️ ffmpeg no está instalado o no se encuentra en el PATH. Por favor, instálalo para que la descarga funcione correctamente. En Ubuntu: `sudo apt-get install ffmpeg`")
+        st.warning(
+            "⚠️ ffmpeg no está instalado ni descargado. "
+            "Haz clic en el botón para descargarlo automáticamente o ejecuta `python ffmpeg_downloader.py`."
+        )
+        if st.button("Descargar ffmpeg automáticamente"):
+            import subprocess
+            subprocess.run(["python", "ffmpeg_downloader.py"])
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
