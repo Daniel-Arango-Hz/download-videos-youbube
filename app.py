@@ -26,22 +26,21 @@ def get_video_info(url):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(url, download=False)
 
-def download_media(url, format_type):
+def download_media(url, format_type, cookies_path=None):
     ydl_opts = {
         'outtmpl': os.path.join('downloads', '%(title)s.%(ext)s'),
         'quiet': True,
         'noplaylist': True,
         'format': 'bestvideo[ext=mp4]+bestaudio/best' if format_type == "MP4" else 'bestaudio/best',
         'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4',
-        }] if format_type == "MP4" else [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192'
         }],
         'progress_hooks': [progress_hook],
     }
+    if cookies_path:
+        ydl_opts['cookiefile'] = cookies_path
 
     # Specific configuration for TikTok
     if "tiktok.com" in url:
@@ -116,99 +115,51 @@ def main():
     
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🚀 YT/TikTok Downloader</h1>", unsafe_allow_html=True)
 
-    # Step 1: Load video
-    with st.form(key='load_form'):
-        url = st.text_input("**YouTube or TikTok URL**", placeholder="Paste the link here...")
-        if st.form_submit_button("🎥 Load Video"):
-            if not url:
-                st.warning("⚠️ Please enter a valid URL")
-            else:
-                try:
-                    with st.spinner('Searching for video...'):
-                        st.session_state.video_info = get_video_info(url)
-                    st.success("Video loaded successfully!")
-                except Exception as e:
-                    st.error(f"❌ Error finding the video: {str(e)}")
-                    if 'video_info' in st.session_state:
-                        del st.session_state.video_info
+    st.markdown("**Opcional:** Sube tu archivo de cookies exportado del navegador para evitar bloqueos de YouTube.")
+    cookies_file = st.file_uploader("Archivo de cookies (Netscape .txt)", type=["txt"])
 
-    # Step 2: Show preview and download
-    if 'video_info' in st.session_state:
-        info = st.session_state.video_info
-        with st.container():
-            st.markdown("<div class='preview-card'>", unsafe_allow_html=True)
-            
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                thumbnail = info.get('thumbnail', '')
-                if thumbnail:
-                    st.image(thumbnail, use_container_width=True, caption="Preview")
-                else:
-                    st.warning("No preview found")
-            
-            with col2:
-                st.subheader(info.get('title', 'No title'))
-                
-                duration = info.get('duration', 0)
-                minutes, seconds = divmod(duration, 60)
-                hours, minutes = divmod(minutes, 60)
-                duration_str = f"{hours:02}:{minutes:02}:{seconds:02}" if hours else f"{minutes:02}:{seconds:02}"
-                
-                st.markdown(f"""
-                <div class="info-text">
-                📺 Channel: **{info.get('uploader', 'Unknown')}**  
-                🕒 Duration: **{duration_str}**  
-                📅 Upload date: **{datetime.strptime(info.get('upload_date', '19700101'), '%Y%m%d').strftime('%d/%m/%Y') if 'upload_date' in info else 'Unknown'}**  
-                👁️ Views: **{info.get('view_count', 'N/A'):,}**  
-                👍 Likes: **{info.get('like_count', 'N/A'):,}**
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        # Step 3: Format selection and download
-        format_type = st.selectbox("**Select Format**", ["MP4", "MP3"], key='format_select')
-        if st.button("⬇️ Download Now", type="primary", key='download_button'):
-            try:
-                st.session_state.progress_bar = st.progress(0)
-                with st.spinner('Processing download...'):
-                    file_path = download_media(url, format_type)
-                    
-                    if not os.path.exists(file_path):
-                        raise FileNotFoundError(f"Could not find the file: {file_path}")
-                    
-                    with open(file_path, "rb") as f:
-                        file_bytes = f.read()
-                    
-                    b64 = base64.b64encode(file_bytes).decode()
-                    mime_type = "audio/mp3" if format_type == "MP3" else "video/mp4"
-                    file_name = os.path.basename(file_path)
-                    
-                    js = f"""
-                    <script>
-                        function downloadFile() {{
-                            var link = document.createElement('a');
-                            link.href = 'data:{mime_type};base64,{b64}';
-                            link.download = '{file_name}';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        }}
-                        window.onload = downloadFile;
-                    </script>
-                    """
-                    st.components.v1.html(js, height=0)
-                    os.remove(file_path)
-                    del st.session_state.video_info
-                    st.success("✅ Download completed successfully!")
-                    time.sleep(1)
-                    st.rerun()
-            
-            except Exception as e:
-                logger.error(f"Error during download: {str(e)}")
-                st.error(f"❌ Download error: {str(e)}")
-                if 'file_path' in locals() and os.path.exists(file_path):
-                    os.remove(file_path)
+    url = st.text_input("Pega el enlace de YouTube o TikTok para descargar el MP3 automáticamente", placeholder="Pega el enlace aquí...")
+    if url:
+        cookies_path = None
+        if cookies_file is not None:
+            cookies_path = os.path.join("downloads", f"cookies_{int(time.time())}.txt")
+            with open(cookies_path, "wb") as f:
+                f.write(cookies_file.read())
+        try:
+            st.session_state.progress_bar = st.progress(0)
+            with st.spinner('Procesando descarga de MP3...'):
+                file_path = download_media(url, "MP3", cookies_path)
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError(f"No se encontró el archivo: {file_path}")
+                with open(file_path, "rb") as f:
+                    file_bytes = f.read()
+                b64 = base64.b64encode(file_bytes).decode()
+                mime_type = "audio/mp3"
+                file_name = os.path.basename(file_path)
+                js = f"""
+                <script>
+                    function downloadFile() {{
+                        var link = document.createElement('a');
+                        link.href = 'data:{mime_type};base64,{b64}';
+                        link.download = '{file_name}';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }}
+                    window.onload = downloadFile;
+                </script>
+                """
+                st.components.v1.html(js, height=0)
+                os.remove(file_path)
+                st.success("✅ ¡Descarga completada!")
+        except Exception as e:
+            logger.error(f"Error durante la descarga: {str(e)}")
+            st.error(f"❌ Error en la descarga: {str(e)}")
+            if 'file_path' in locals() and os.path.exists(file_path):
+                os.remove(file_path)
+        finally:
+            if cookies_path and os.path.exists(cookies_path):
+                os.remove(cookies_path)
 
 if __name__ == "__main__":
     main()
