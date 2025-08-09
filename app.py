@@ -6,6 +6,7 @@ import time
 import re
 from datetime import datetime
 import logging
+import shutil
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +26,16 @@ def get_video_info(url):
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(url, download=False)
+
+def get_ffmpeg_location():
+    # Busca ffmpeg en el PATH o usa una variable de entorno
+    ffmpeg_path = os.environ.get("FFMPEG_PATH")
+    if ffmpeg_path and os.path.isfile(ffmpeg_path):
+        return ffmpeg_path
+    ffmpeg_in_path = shutil.which("ffmpeg")
+    if ffmpeg_in_path:
+        return ffmpeg_in_path
+    return None
 
 def download_media(url, format_type, cookies_path=None):
     ydl_opts = {
@@ -49,6 +60,10 @@ def download_media(url, format_type, cookies_path=None):
                 'download_without_watermark': True,
             }
         }
+
+    ffmpeg_location = get_ffmpeg_location()
+    if ffmpeg_location:
+        ydl_opts['ffmpeg_location'] = ffmpeg_location
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -160,6 +175,9 @@ def main():
         finally:
             if cookies_path and os.path.exists(cookies_path):
                 os.remove(cookies_path)
+
+    if not get_ffmpeg_location():
+        st.warning("⚠️ ffmpeg no está instalado o no se encuentra en el PATH. Por favor, instálalo para que la descarga funcione correctamente. En Ubuntu: `sudo apt-get install ffmpeg`")
 
 if __name__ == "__main__":
     main()

@@ -4,3 +4,4 @@ yt_dlp
 browser-cookie3
 requests
 cryptography
+# Requiere ffmpeg instalado en el sistema (https://ffmpeg.org/)
