@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+import re
+import urllib.parse
 
 st.title("🎵 YouTube Downloader")
 
@@ -23,10 +25,24 @@ if st.button("Descargar"):
                 # ✅ Verificamos si el backend devolvió un archivo
                 content_type = response.headers.get("content-type", "")
                 if "audio" in content_type:
-                    content_disposition = response.headers.get("content-disposition", "")
+                    content_disposition = response.headers.get("content-disposition", "") or ""
                     filename = "audio.mp3"
-                    if "filename=" in content_disposition:
-                        filename = content_disposition.split("filename=")[1].strip('"')
+
+                    # Busca filename* (UTF-8) primero, luego filename
+                    m_star = re.search(r"filename\*\s*=\s*UTF-8''([^;]+)", content_disposition, flags=re.IGNORECASE)
+                    if m_star:
+                        filename = urllib.parse.unquote(m_star.group(1))
+                    else:
+                        m = re.search(r'filename\s*=\s*"(.*?)"', content_disposition)
+                        if m:
+                            filename = m.group(1)
+                        else:
+                            m2 = re.search(r'filename\s*=\s*([^;]+)', content_disposition)
+                            if m2:
+                                filename = m2.group(1).strip().strip('"')
+
+                    # Evita rutas en el filename
+                    filename = filename.split("/")[-1].split("\\")[-1]
 
                     with open(filename, "wb") as f:
                         for chunk in response.iter_content(chunk_size=8192):

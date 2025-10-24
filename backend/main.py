@@ -3,10 +3,22 @@ from fastapi.responses import FileResponse, JSONResponse
 import yt_dlp
 import os
 import traceback
+from urllib.parse import quote
+import re
 
 app = FastAPI()
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+def sanitize_for_filename(s: str, max_len: int = 120) -> str:
+    # Reemplaza caracteres no permitidos en nombres de archivo y limita longitud
+    s = re.sub(r'[\\/:*?"<>|]', '_', s)
+    s = s.strip()
+    if len(s) > max_len:
+        s = s[:max_len].rstrip()
+    # Asegura ASCII para la parte filename (fallback)
+    ascii_safe = ''.join(ch if 32 <= ord(ch) <= 126 else '_' for ch in s)
+    return ascii_safe or "audio"
 
 @app.get("/download")
 async def download_video(url: str = Query(...), cookies: UploadFile = None):
@@ -52,14 +64,20 @@ async def download_video(url: str = Query(...), cookies: UploadFile = None):
         if cookies_path and os.path.exists(cookies_path):
             os.remove(cookies_path)
 
-        # Usa el título real del video para el nombre del archivo descargado
-        title = info.get("title", os.path.basename(file_mp3))
+        # Construye nombres seguros y header Content-Disposition
+        title = info.get("title") if isinstance(info, dict) else None
+        if not title:
+            title = os.path.splitext(os.path.basename(file_mp3))[0]
         download_name = f"{title}.mp3"
+        ascii_name = sanitize_for_filename(download_name)
+        # filename* debe ir percent-encoded (UTF-8)
+        quoted_name = quote(download_name, safe='')
+        content_disposition = f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quoted_name}'
 
         return FileResponse(
             file_mp3,
-            filename=download_name,
-            media_type="audio/mpeg"
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": content_disposition}
         )
 
     except Exception as e:
