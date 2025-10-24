@@ -5,6 +5,9 @@ st.title("🎵 YouTube Downloader")
 
 url = st.text_input("Ingrese el enlace de YouTube:")
 cookie_file = st.file_uploader("Suba su archivo de cookies (opcional)", type=["txt"])
+usar_cookies = False
+if cookie_file:
+    usar_cookies = st.checkbox("Usar cookies para este video", value=True)
 
 if st.button("Descargar"):
     if not url:
@@ -13,7 +16,7 @@ if st.button("Descargar"):
         with st.spinner("Descargando..."):
             try:
                 backend_url = "https://back-music-v1.onrender.com/download"
-                files = {"cookies": cookie_file} if cookie_file else None
+                files = {"cookies": cookie_file} if (cookie_file and usar_cookies) else None
                 params = {"url": url}
                 response = requests.get(backend_url, params=params, files=files, stream=True)
 

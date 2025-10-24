@@ -33,6 +33,7 @@ async def download_video(url: str = Query(...), cookies: UploadFile = None):
             }
         }
 
+        cookies_path = None
         if cookies:
             cookies_path = os.path.join(DOWNLOAD_DIR, "cookies.txt")
             with open(cookies_path, "wb") as f:
@@ -41,18 +42,23 @@ async def download_video(url: str = Query(...), cookies: UploadFile = None):
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-
-            # Si yt-dlp devolvió None (por ejemplo cuando ignoreerrors=True y la descarga falló),
-            # evitamos llamar a prepare_filename sobre None y devolvemos un error claro.
             if info is None:
                 raise Exception("yt-dlp devolvió None: la descarga falló o fue ignorada. Comprueba la URL, cookies y opciones de yt-dlp.")
 
             filename = ydl.prepare_filename(info)
             file_mp3 = os.path.splitext(filename)[0] + ".mp3"
 
+        # Limpia el archivo de cookies si fue usado
+        if cookies_path and os.path.exists(cookies_path):
+            os.remove(cookies_path)
+
+        # Usa el título real del video para el nombre del archivo descargado
+        title = info.get("title", os.path.basename(file_mp3))
+        download_name = f"{title}.mp3"
+
         return FileResponse(
             file_mp3,
-            filename=os.path.basename(file_mp3),
+            filename=download_name,
             media_type="audio/mpeg"
         )
 
