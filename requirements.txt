@@ -1,7 +1,0 @@
-streamlit
-pytube
-yt_dlp
-browser-cookie3
-requests
-cryptography
-# ffmpeg se descarga automáticamente con ffmpeg_downloader.py si no está presente
