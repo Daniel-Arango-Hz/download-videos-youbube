@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, Query
 from fastapi.responses import FileResponse, JSONResponse
 import yt_dlp
 import os
+import traceback
 
 app = FastAPI()
 DOWNLOAD_DIR = "downloads"
@@ -40,8 +41,14 @@ async def download_video(url: str = Query(...), cookies: UploadFile = None):
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-            title = ydl.prepare_filename(info)
-            file_mp3 = os.path.splitext(title)[0] + ".mp3"
+
+            # Si yt-dlp devolvió None (por ejemplo cuando ignoreerrors=True y la descarga falló),
+            # evitamos llamar a prepare_filename sobre None y devolvemos un error claro.
+            if info is None:
+                raise Exception("yt-dlp devolvió None: la descarga falló o fue ignorada. Comprueba la URL, cookies y opciones de yt-dlp.")
+
+            filename = ydl.prepare_filename(info)
+            file_mp3 = os.path.splitext(filename)[0] + ".mp3"
 
         return FileResponse(
             file_mp3,
@@ -50,4 +57,7 @@ async def download_video(url: str = Query(...), cookies: UploadFile = None):
         )
 
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        # Incluimos la traza para facilitar diagnóstico local. En un entorno de producción
+        # conviene escribir en logs y no devolver trazas completas al cliente.
+        tb = traceback.format_exc()
+        return JSONResponse({"error": str(e), "traceback": tb}, status_code=500)
